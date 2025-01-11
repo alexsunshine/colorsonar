@@ -3,6 +3,7 @@ let analyser;
 let dataArray;
 let canvas;
 let canvasCtx;
+let permissionRequested = false;
 
 const startButton = document.getElementById('startButton');
 const messageArea = document.getElementById('messageArea');
@@ -22,7 +23,14 @@ function startVisualization() {
         return;
     }
 
+    if (permissionRequested) {
+        showMessage('Permiso ya solicitado. Por favor, habilita el micrófono manualmente en la configuración del navegador.', true);
+        showInstructions();
+        return;
+    }
+
     showMessage('Requesting microphone access...');
+    permissionRequested = true;
 
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         navigator.mediaDevices.getUserMedia({ audio: true, video: false })
@@ -55,7 +63,25 @@ function setupAudioContext(stream) {
 
 function handleError(err) {
     console.error('Error accessing microphone:', err);
-    showMessage(`Error: ${err.message}. Please ensure you've granted microphone permissions.`, true);
+    if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        showMessage('Permiso denegado. Por favor, habilita el micrófono manualmente en la configuración del navegador.', true);
+        showInstructions();
+    } else {
+        showMessage(`Error: ${err.message}. Please ensure you've granted microphone permissions.`, true);
+    }
+}
+
+function showInstructions() {
+    const instructions = document.createElement('div');
+    instructions.innerHTML = `
+        <h2>Cómo habilitar el micrófono:</h2>
+        <ol>
+            <li>Haz clic en el icono del candado en la barra de direcciones.</li>
+            <li>Busca la opción "Micrófono" y cámbiala a "Permitir".</li>
+            <li>Recarga la página y vuelve a intentarlo.</li>
+        </ol>
+    `;
+    messageArea.appendChild(instructions);
 }
 
 function draw() {
@@ -110,4 +136,3 @@ document.body.addEventListener("touchmove", function (e) {
         e.preventDefault();
     }
 }, { passive: false });
-
